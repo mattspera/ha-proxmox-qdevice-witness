@@ -1,0 +1,16 @@
+name: Proxmox QDevice Witness
+version: "0.1.0"
+slug: proxmox_qdevice
+description: Corosync QNetd witness for an independent, two-node Proxmox VE cluster
+url: https://github.com/mattspera/proxmox-qdevice-ha-addon
+arch:
+  - amd64
+init: false
+startup: services
+boot: auto
+ports:
+  5403/tcp: 5403
+  22/tcp: null
+watchdog: tcp://[HOST]:[PORT:5403]
+schema:
+  ssh_public_key: str?

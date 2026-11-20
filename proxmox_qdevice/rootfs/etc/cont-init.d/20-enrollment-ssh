@@ -1,0 +1,49 @@
+#!/command/with-contenv bashio
+set -euo pipefail
+
+service=/etc/services.d/enrollment-ssh
+rm -rf -- "$service"
+if ! key=$(jq -r '.ssh_public_key // ""' /data/options.json); then
+    bashio::log.warning 'Enrollment SSH is disabled. The app options could not be read.'
+    exit 0
+fi
+if [[ -z "$key" ]]; then
+    exit 0
+fi
+
+if [[ "$key" == *[$'\r\n']* ]]; then
+    bashio::log.warning 'Enrollment SSH is disabled. Enter one OpenSSH public key.'
+    exit 0
+fi
+read -r key_type key_data _ <<< "$key"
+case "$key_type" in
+    ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) ;;
+    *)
+        bashio::log.warning 'Enrollment SSH is disabled. Enter a standard OpenSSH public key.'
+        exit 0
+        ;;
+esac
+
+install -d -m 0755 /run/sshd
+install -d -m 0700 /run/qdevice-ssh /data/ssh
+umask 077
+key_file=/run/qdevice-ssh/authorized_keys
+printf '%s %s\n' "$key_type" "$key_data" > "$key_file"
+if ! ssh-keygen -l -f "$key_file" >/dev/null 2>&1; then
+    rm -f -- "$key_file"
+    bashio::log.warning 'Enrollment SSH is disabled. The public key could not be read.'
+    exit 0
+fi
+printf 'restrict %s %s\n' "$key_type" "$key_data" > "$key_file"
+
+host_key=/data/ssh/ssh_host_ed25519_key
+if [[ ! -f "$host_key" ]] && ! ssh-keygen -q -t ed25519 -N '' -f "$host_key"; then
+    bashio::log.warning 'Enrollment SSH is disabled. SSH host key generation failed.'
+    exit 0
+fi
+if ! /usr/sbin/sshd -t -f /etc/ssh/sshd_config.qdevice; then
+    bashio::log.warning 'Enrollment SSH is disabled. SSH configuration validation failed.'
+    exit 0
+fi
+install -D -m 0755 /usr/local/libexec/qdevice/ssh-run "$service/run"
+bashio::log.info "Enrollment SSH host key: $(ssh-keygen -l -f "$host_key")"

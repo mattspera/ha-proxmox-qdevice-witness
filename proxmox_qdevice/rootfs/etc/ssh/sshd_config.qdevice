@@ -1,0 +1,14 @@
+Port 22
+HostKey /data/ssh/ssh_host_ed25519_key
+AuthorizedKeysFile /run/qdevice-ssh/authorized_keys
+AllowUsers root
+PermitRootLogin prohibit-password
+AuthenticationMethods publickey
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+UsePAM no
+DisableForwarding yes
+PermitTTY no
+PermitUserEnvironment no
+PermitUserRC no
+Subsystem sftp internal-sftp

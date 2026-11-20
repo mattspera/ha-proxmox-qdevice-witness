@@ -1,0 +1,52 @@
+#!/command/with-contenv bash
+set -euo pipefail
+
+state=/data/qnetd
+config=/etc/corosync/qnetd
+
+validate_database() {
+    local db=$1
+    local file
+    for file in cert9.db key4.db pkcs11.txt qnetd-cacert.crt serial.txt; do
+        [[ -s "$db/$file" ]] || return 1
+    done
+    [[ -f "$db/pwdfile.txt" && $(<"$db/serial.txt") =~ ^[0-9]+$ ]] || return 1
+
+    local stored_ca exported_ca
+    stored_ca=$(certutil -L -d "sql:$db" -n 'QNet CA' -a |
+        openssl x509 -noout -fingerprint -sha256) || return 1
+    exported_ca=$(openssl x509 -in "$db/qnetd-cacert.crt" -noout -fingerprint -sha256) || return 1
+    [[ "$stored_ca" == "$exported_ca" ]] || return 1
+
+    local keys
+    keys=$(s6-setuidgid coroqnetd certutil -K -d "sql:$db" -f "$db/pwdfile.txt" 2>/dev/null) || return 1
+    grep -q ':QNet CA$' <<< "$keys" && grep -q ':QNetd Cert$' <<< "$keys" &&
+        s6-setuidgid coroqnetd certutil -V -d "sql:$db" -n 'QNetd Cert' -u V >/dev/null
+}
+
+# A restart after interrupted initialization must resolve the persistent path again.
+ln -sfnT "$state" "$config"
+if [[ ! -e "$state" && ! -L "$state" ]]; then
+    staging=$(mktemp -d /data/.qnetd-init.XXXXXX)
+    trap 'ln -sfnT "$state" "$config"; rm -rf -- "$staging"' EXIT
+    chgrp coroqnetd "$staging"
+    chmod 0750 "$staging"
+    ln -sfnT "$staging" "$config"
+
+    printf '%s\n' 'Initializing the QNetd certificate database.'
+    if ! corosync-qnetd-certutil -i -G || ! validate_database "$config/nssdb"; then
+        printf '%s\n' 'QNetd certificate initialization failed.' >&2
+        exit 1
+    fi
+
+    mv -T -- "$staging" "$state"
+    ln -sfnT "$state" "$config"
+    trap - EXIT
+elif [[ ! -d "$state" || -L "$state" ]] ||
+    ! chgrp -hR coroqnetd "$state" || ! validate_database "$config/nssdb"; then
+    printf '%s\n' 'QNetd certificate state is incomplete, unreadable, or invalid.' \
+        'Restore the app backup that contains /data/qnetd before restarting.' >&2
+    exit 1
+fi
+
+install -d -o coroqnetd -g coroqnetd -m 0750 /run/corosync-qnetd

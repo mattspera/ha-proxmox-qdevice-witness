@@ -1,0 +1,7 @@
+configuration:
+  ssh_public_key:
+    name: Proxmox enrollment public key
+    description: Paste the initiating node's root public key during setup. Clear it after enrollment.
+network:
+  5403/tcp: QNetd witness
+  22/tcp: Temporary enrollment SSH
