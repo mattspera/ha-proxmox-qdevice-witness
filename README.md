@@ -4,7 +4,7 @@ Run a Corosync QNetd witness on a Home Assistant OS machine independent of your 
 
 ## Install
 
-In Home Assistant, go to **Settings → Apps → Install app → ⋮ → Repositories** and add `https://github.com/mattspera/proxmox-qdevice-ha-addon`. Install **Proxmox QDevice Witness**, enable **Start on boot**, and start the app. Supervisor builds the image on your Home Assistant OS host. [Home Assistant app repository guide](https://contributors.home-assistant.io/apps/guides/repository/)
+In Home Assistant, go to **Settings → Apps → Install app → ⋮ → Repositories** and add `https://github.com/mattspera/ha-proxmox-qdevice-witness`. Install **Proxmox QDevice Witness**, enable **Start on boot**, and start the app. Supervisor builds the image on your Home Assistant OS host. [Home Assistant app repository guide](https://contributors.home-assistant.io/apps/guides/repository/)
 
 Follow the [enrollment and recovery guide](proxmox_qdevice/DOCS.md) to connect the Proxmox cluster.
 

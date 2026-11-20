@@ -1,2 +1,3 @@
 name: Proxmox QDevice Witness
-url: https://github.com/mattspera/proxmox-qdevice-ha-addon
+url: https://github.com/mattspera/ha-proxmox-qdevice-witness
+maintainer: Matt Spera (@mattspera)

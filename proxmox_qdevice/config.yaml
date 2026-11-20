@@ -2,7 +2,7 @@ name: Proxmox QDevice Witness
 version: "0.1.0"
 slug: proxmox_qdevice
 description: Corosync QNetd witness for an independent, two-node Proxmox VE cluster
-url: https://github.com/mattspera/proxmox-qdevice-ha-addon
+url: https://github.com/mattspera/ha-proxmox-qdevice-witness
 arch:
   - amd64
 init: false
